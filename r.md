@@ -197,3 +197,59 @@ docker run -it -p <local>:<container> -e key=value -e key=value image_name
 ```
 
 ---
+
+## Dockerizing a Web Application
+
+### Dockerfile Basics
+
+1️⃣ **Base Image**
+Choose a base image: `node`, `ubuntu`, etc.
+Add commands if needed:
+
+```Dockerfile
+FROM node
+RUN apt-get update
+```
+
+2️⃣ **Copy Files**
+ source → destination:
+
+```Dockerfile
+COPY main.js index.js
+```
+
+3️⃣ **Entrypoint vs. Run**
+
+* **RUN**: For build-time commands (e.g., install packages).
+* **ENTRYPOINT**: For container start commands (e.g., `node main.js`).
+
+Example:
+
+```Dockerfile
+ENTRYPOINT ["node", "main.js"]
+```
+
+---
+
+### Building the Image
+
+Run in the Dockerfile directory:
+
+```bash
+docker build -t <image_name> .
+docker build -t basic-nodejs .
+```
+
+---
+
+### Push to Docker Hub
+
+1️⃣ Create a repo on Docker Hub.
+2️⃣ Build an image **with the same name** as the repo.
+3️⃣ Push:
+
+```bash
+docker push <dockerhub_username>/<repo_name>
+```
+
+---
