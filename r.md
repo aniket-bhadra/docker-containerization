@@ -253,3 +253,139 @@ docker push <dockerhub_username>/<repo_name>
 ```
 
 ---
+
+Once a container is created with specific envs/ports, these settings persist in the container’s configuration. When you start the container, they are automatically reapplied—there’s no need to pass them every time. However, if the container is removed, those settings (env/ports) are lost, and you’ll need to recreate the container with the settings
+
+
+### docker important concept:
+Each container = 1 main process (usually PID 1).
+Any other processes inside the container (like Postgres or Redis) = child processes of that main process.
+If the main process dies (e.g., Node.js server crashes) → Docker considers the entire container "dead".
+All child processes (like Postgres) running in the same container → die too
+
+
+The main process is whatever you specify in CMD/ENTRYPOINT.
+If you build a custom image with multiple services (Node.js + Postgres + MongoDB), the container’s main process is usually the startup script that launches all services.
+If that script dies → whole container dies.
+If one service (like Node.js) dies, but the script stays running → container stays up, but that one service is down (a dangerous, hidden failure).
+
+
+Image = Blueprint with OS, tools, code, config.
+Container = Running instance in RAM
+### Docker Compose--
+### why we need multiple containers for each service?
+suppose **e-commerce project** using Docker:
+👉 We **must** use **multiple containers**, one for each service, because:
+
+* If we put everything in one container → 
+**impossible to scale**,because for heavy traffic if we want-> 1 Postgres container.
+3 Node.js containers, not possible to achieve here
+**Bigger containers = heavier, slower startup.**
+**If one service crashes, whole container fails.**
+* **Super hard to debug**,
+* Starting **one container** will automatically start **all services** (even the ones we don’t need).
+* So, **very difficult to manage**.
+
+👉 It’s **better** to put **each service in its own container** →
+
+* Easy to manage,
+* Easy to scale,
+* Easy to debug,
+* Easy to monitor.
+
+✅ **BUT** → Running multiple containers for each service manually is a headache:
+
+* Have to manage **ports**,
+* Set **env variables** for each,
+* **Manually mount volumes**,
+* **Manually create networks and link containers**,
+* **Manually start/stop each container**.
+
+👉 This is the **exact problem** Docker Compose solves:
+
+* You write a **`docker-compose.yml`** file →
+
+  * Define services,
+  * Set env variables, ports, volumes,
+  * Define networks,
+  * Define dependencies.
+* Then just **run** that file:
+
+  * It **starts all services** on the correct ports,
+  * **Mounts volumes**,
+  * **Links containers**,
+  * **Creates networks**,
+  * And makes **start/stop** super easy.
+
+---
+ **Compose = Simplifies multi-container management**. 
+so,
+If I need to run multiple containers with different images, I have to execute:
+`docker run -it -p 1025:1025 -e key=value -e key=value image_name`
+**multiple times**.
+
+This is **tedious**—especially in a team:
+
+* Everyone needs to know **which containers** to run,
+* The **ports**,
+* The **environment variables**,
+* And all other configs.
+
+👉 **Docker Compose** simplifies this by defining everything in one `docker-compose.yml`.
+
+---
+docker compose--used when we required to run multiple containers--
+
+**Provide configuration in `docker-compose.yml` file like this:**
+
+```yaml
+version: '3.8'  # Docker Compose version
+
+services:
+  <any-name-you-want>:
+    image: postgres  # pulled from hub.docker.com
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: review
+      POSTGRES_PASSWORD: password
+
+  <one-more-service-name>:
+    image: redis
+    ports:
+      - '6379:6379'
+```
+
+---
+
+### Then in terminal (same folder where `docker-compose.yml` exists):
+
+```bash
+docker compose up
+```
+This will:
+
+* Pull all configured images,
+* Start containers with respective configurations.
+
+---
+
+### Other useful commands:
+
+```bash
+docker compose down
+```
+* Stops and removes the **containers** (images remain locally).
+
+```bash
+docker compose up -d
+```
+
+* Runs containers **in the background (detached mode)**,
+* Frees up your terminal for other work.
+
+---
+
+When you create a container from Docker images like MySQL, PostgreSQL, or MongoDB, the respective DBMS server (e.g., mysqld, postgres, mongod) runs inside the container.
+These images also include the CLI tools (like mysql, psql, mongosh), so any commands you run inside the container’s terminal interact directly with the DBMS server.
