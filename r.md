@@ -389,3 +389,248 @@ docker compose up -d
 
 When you create a container from Docker images like MySQL, PostgreSQL, or MongoDB, the respective DBMS server (e.g., mysqld, postgres, mongod) runs inside the container.
 These images also include the CLI tools (like mysql, psql, mongosh), so any commands you run inside the container’s terminal interact directly with the DBMS server.
+
+
+### 🧾 Docker networking
+
+Starting from the host PC:
+Your PC connects to the internet through an ethernet cable plugged into a Network Interface Card (NIC) — a physical device responsible for sending and receiving data.
+This cable goes to a router, which in turn connects to your ISP.
+
+The PC’s networking is managed in a network namespace — a software layer that holds all the network-related details like IP address, MAC, routing table, and active network processes.
+
+---
+
+### When we create a container:
+
+Each container gets its own **network namespace** and its own **virtual NIC (vNIC)** — meaning each container is completely isolated from the host pc and other containers because they are in their own network namespaces.
+They are **completely separated**.
+
+---
+
+### When we create a **custom bridge network**:
+
+* It acts like a **virtual switch**.
+* One end of this switch (bridge) links to **host’s physical NIC**.
+* Each container can connect to this virtual switch.
+* Docker creates a **veth pair** (virtual Ethernet cable):
+
+  * One end goes **inside the container** (acts as its **vNIC**).
+  * The other end stays in the  **bridge** (virtual switch).
+
+This setup enables:
+
+* Access to the internet.
+* Communication between containers connected to the same bridge.
+* Communication with the bridge.
+
+---
+
+### 🔐 **Why Can't a Container Fully Access the Host Even When Connected to the Bridge?**  
+
+Even though a container can access the host’s physical NIC **via the bridge**, it remains in its **own separate network namespace**, meaning:  
+
+- It **doesn't share** the host’s IP stack, routing table, or active sockets.  
+- **Ports must be explicitly exposed/forwarded** for the host to accept incoming traffic from the container.  
+- The container **cannot see or interact** with the host’s processes or services unless permissions and port mappings are configured.  
+- **Firewall/NAT rules** may further restrict access.  
+
+### **How a Container Accesses the Internet**  
+
+1. The container sends data via its **virtual NIC**.  
+2. This data reaches the **Docker bridge**.  
+3. The bridge forwards the data to the **host’s physical NIC**.  
+4. The physical NIC sends it to the **router**, which then routes it to the **internet**.  
+
+### **Port Exposing**  
+
+Port mapping ensures that requests to a port on the **host machine (e.g., 8080)** are forwarded to the corresponding port **inside the container (e.g., 80)**, enabling external access to containerized services.  
+
+
+Containers on a bridge network can communicate with each other and the bridge's IP but cannot directly access the host’s physical IP or network stack, as the bridge functions as a virtual switch connected to the host’s NIC rather than its namespace. While this setup allows containers to reach the external world (Internet) via the host’s NIC, the outside world cannot directly access containers due to their isolated namespace. To enable external access, ports must be exposed—port mapping ensures that incoming requests (e.g., to port 8080 on the host machine) are forwarded to the appropriate container.
+
+### When we run a container with `--network=host`:
+
+```bash
+docker run -it --network=host busybox
+```
+
+This container uses the **host's network namespace directly**.
+
+➡️ It does **not** get its own network namespace.
+➡️ It does **not** get its own vNIC either — it uses the **host’s real NIC directly**.
+
+> ✅ So, no virtual switch, no veth pair. It becomes **part of the host network**, just like any regular app on your system.share same ip of host.
+
+🔓 Because it shares the namespace:
+
+* No need for port forwarding — container can bind to any port directly.
+* It can access all network-related info of the host (IP, open ports, etc.).
+* It can interfere with services running on the host if not careful.
+
+---
+Here's the data flow for a container in host network mode accessing the internet:
+
+1. The container sends out data, which goes to its own network namespace. But since it's in host network mode, this is effectively the same as the host's network namespace.
+2. The data is then sent to the host PC's network stack, which is connected to the physical NIC.
+3. The physical NIC sends this data to your router.
+4. The router then sends it out to the internet.
+
+So, here a request to localhost:8080 is directly handled by the container without any port mapping.
+## Docker Networking: Key Commands & Concepts
+
+### 🔹 See how many containers are connected to a network
+
+```bash
+docker network inspect bridge
+docker network inspect <network_name>
+```
+
+### 🔹 Networking Basics
+
+* Docker creates a **bridge network** by default on the host machine.
+* All containers are, by default, connected to this bridge, enabling them to talk to the internet.
+
+### 🔹 Check available network drivers
+
+```bash
+docker network ls
+```
+
+By default, Docker uses the **bridge** network driver.
+
+---
+
+
+### 3️⃣ **None** Network Driver
+
+```bash
+docker run -it --network=none busybox
+```
+
+* The container has **no network access**.
+
+---
+
+## Understanding Network Namespaces
+
+In Docker, each container has its own network namespace, regardless of which network it’s connected to. This is true even when multiple containers are connected to the same network.
+
+Here’s why: The purpose of a network namespace is to provide isolation for a container’s network resources. This means that each container has its own set of network interfaces, IP addresses, routing tables, and so on, which are all isolated from those of other containers. This isolation is maintained even when containers are connected to the same network.
+
+So, while multiple containers can communicate with each other when they’re connected to the same network, they do not share a network namespace. Each container’s network resources are still isolated within its own network namespace.
+but When a Docker container is run in host mode, it shares the same network namespace as the host machine. This means it uses the same network interfaces, IP addresses, routing tables, and so on, as the host machine. It’s as if the container is running directly on the host’s network. This can improve network performance, but it also means the container is less isolated from the host, which might be a concern depending on your security requirements.
+
+---
+
+## User-Defined Bridge Networks
+
+### Create a user-defined bridge
+
+```bash
+docker network create -d bridge social
+docker run -it --network=social busybox
+```
+-d bridge specifies the driver (bridge mode). You can omit -d because bridge is the default driver
+### Differences: User-Defined vs. Default Bridge
+
+| Feature        | Default Bridge          | User-Defined Bridge                          |
+| -------------- | ----------------------- | -------------------------------------------- |
+| DNS Resolution | No (IP only)            | Yes (by container name)                      |
+| Isolation      | Basic                   | Better isolation; scoped to specific network |
+| Flexibility    | Limited (global config) | Configurable per network                     |
+
+**Note:**
+
+* Containers without a `--network` flag attach to the default bridge.
+* This can cause unrelated containers to communicate, posing a security risk.
+* Use **user-defined networks** for better isolation and control.
+
+### Remove a user-defined network
+
+```bash
+docker network rm milkyway
+```
+
+---
+
+## Connect a Container to Multiple Networks
+
+* **Add** an existing container to a network:
+
+  ```bash
+  docker network connect <network_name> <container_name_or_id>
+  ```
+
+* **Disconnect** a container from a network:
+
+  ```bash
+  docker network disconnect <network_name> <container_name_or_id>
+  ```
+
+---
+
+## 🐳 Docker Network Drivers Summary
+
+---
+
+### 1️⃣ **Bridge** (Default)
+
+* Containers are connected to a **default bridge network** unless specified.
+* Isolated from the host network.
+* Requires port mapping to communicate with the host.
+
+---
+
+### 2️⃣ **Host** Network Driver
+
+```bash
+docker run -it --network=host busybox
+```
+
+* Shares the **host’s network namespace**:
+
+  * Same IP address
+  * Same ports
+  * Same routing table
+* ✅ **Pros**: Better network performance.
+* ❌ **Cons**: Less isolation; full access to host’s network.
+
+---
+
+### 3️⃣ **Overlay Network**
+
+* Connects **multiple Docker daemons** (typically used in Swarm).
+* Enables containers on different hosts to communicate securely.
+* Useful for multi-host networking.
+
+---
+
+### 4️⃣ **IPvlan**
+
+* Containers get **unique IPs** while sharing the **host’s NIC**.
+* Operates in L2 or L3 mode.
+* No port mapping needed.
+* Great for **controlled IP management**.
+
+---
+
+### 5️⃣ **Macvlan**
+
+* Each container gets its own MAC address and IP, and connects directly to the router.
+* Appears as a **separate device** to the router.
+* Behaves like a **virtual machine** on the network.
+* Ideal for integrating containers into an existing physical network.
+
+---
+
+### 6️⃣ **None**
+
+* **Disables all networking**:
+
+  * No IP address
+  * No MAC address
+  * No virtual NIC or connectivity
+* Used for **security** or custom networking setups.
+
+---
