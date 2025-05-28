@@ -634,3 +634,117 @@ docker run -it --network=host busybox
 * Used for **security** or custom networking setups.
 
 ---
+
+
+## 🐳 Docker Volumes
+
+### 🟢 Why Use Volumes?
+
+When you delete a container, its data is gone.
+To **save data** and **reuse it**, we use **volumes**.
+
+---
+
+## 🟢 Types of Docker Volumes
+
+✅ **Both store data on host disk**.
+✅ Host volume: You manage folder. use case:Edit code on PC, see changes inside container.
+✅ Named volume: Docker manages location. use case: You want to share files/configs/code between your PC and container
+
+---
+
+## 🟢 Why Named Volumes are Better for Persistent Data
+
+✅ In **named volumes**, Docker **chooses the storage location** (usually under `/var/lib/docker/volumes/`).
+✅ Docker **manages the storage** — this means:
+
+* It’s **more secure** for important data (like databases).
+* It’s **easier to back up, restore, and migrate** — Docker handles the details.
+* There’s **less risk of breaking** when Docker updates, because Docker controls the volume setup.
+
+---
+
+🔸 In **host volumes**, **you** choose the location and manage everything.
+
+* This means **more work for you**:
+
+  * You need to remember where the data is stored.
+  * You have to handle backups, permissions, and migrations yourself.
+  * If something goes wrong with the host filesystem, your data could break.
+
+---
+
+### 🔥 Conclusion
+
+For **persistent data** like databases or app data that must not be lost:
+✅ **Use named volumes.**
+For **config files, code, logs**, where you want to edit from the host:
+✅ Use **host volumes**.
+
+
+---
+
+## 🟢 Commands
+
+### Host Volume
+
+#### 1️⃣ Create & Run Container with Host Volume
+
+```bash
+docker run -it -v "D:\myfolder:/data" ubuntu
+```
+
+#### 2️⃣ Run Another Container with Existing Host Volume
+
+Just **use the same host folder**:
+
+```bash
+docker run -it -v "D:\myfolder:/abc" busybox
+```
+
+---
+
+### Named Volume
+
+#### 1️⃣ Create a Named Volume
+
+```bash
+docker volume create my_volume
+```
+
+#### 2️⃣ Run Container with Named Volume
+
+```bash
+docker run -it -v my_volume:/data ubuntu
+```
+
+#### 3️⃣ Run Another Container with Existing Named Volume
+
+```bash
+docker run -it -v my_volume:/xyz busybox
+```
+
+---
+
+### Manage Volumes
+
+* **List volumes**
+
+  ```bash
+  docker volume ls
+  ```
+* **Inspect a volume**
+
+  ```bash
+  docker volume inspect my_volume
+  ```
+* **Delete a volume**
+
+  ```bash
+  docker volume rm my_volume
+  ```
+
+---
+
+
+
