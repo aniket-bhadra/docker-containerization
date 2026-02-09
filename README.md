@@ -1,3 +1,49 @@
+# Docker Complete Guide
+
+## Table of Contents
+1. [The Problem: Environment Inconsistency](#problem)
+   - [Why package.json Alone Isn't Enough](#why-packagejson-alone-isnt-enough)
+2. [Docker Architecture](#docker-architecture--)
+   - [Docker Daemon](#-docker-daemon-dockerd)
+   - [Docker CLI](#-docker-cli-docker-command)
+   - [Docker Desktop](#️-docker-desktop)
+3. [What is an Image?](#what-is-image)
+4. [What is a Container?](#what-is-container)
+5. [Docker Image vs Docker Container](#docker-image-vs-docker-container)
+6. [Sharing a Docker Environment](#sharing-a-docker-environment-means-sharing-a-docker-image)
+7. [Essential Docker Commands](#sharing-a-docker-environment-means-sharing-a-docker-image)
+   - [Running Containers](#run-a-container-with-an-ubuntu-image)
+   - [Interactive vs Detached Mode](#the--it-flag-controls-whether-the-host-terminal-stays-attached-or-not-however-once-we-use--it-whether-we-remain-inside-the-container-depends-on-the-command-itself)
+   - [Port Mapping](#port-mapping)
+   - [Environment Variables](#environment-variables)
+8. [Dockerizing a Web Application](#dockerizing-a-web-application)
+   - [Dockerfile Basics](#dockerfile-basics)
+   - [Building the Image](#building-the-image)
+   - [Push to Docker Hub](#push-to-docker-hub)
+9. [Important Container Concepts](#docker-important-concept)
+10. [Docker Compose](#docker-compose)
+    - [Why Multiple Containers Per Service?](#why-we-need-multiple-containers-for-each-service)
+    - [docker-compose.yml Setup](#provide-configuration-in-docker-composeyml-file-like-this)
+    - [Compose Commands](#then-in-terminal-same-folder-where-docker-composeyml-exists)
+11. [Docker Networking](#-docker-networking)
+    - [How Container Networking Works](#when-we-create-a-container)
+    - [Bridge Networks](#when-we-create-a-custom-bridge-network)
+    - [Host Network Mode](#when-we-run-a-container-with---networkhost)
+    - [Network Drivers Summary](#-docker-network-drivers-summary)
+    - [User-Defined Bridge Networks](#user-defined-bridge-networks)
+    - [Connecting Containers to Multiple Networks](#connect-a-container-to-multiple-networks)
+    - [Key Networking Commands](#-see-how-many-containers-are-connected-to-a-network)
+12. [Docker Volumes](#-docker-volumes)
+    - [Types of Volumes](#-types-of-docker-volumes)
+    - [Host Volumes](#host-volume)
+    - [Named Volumes](#named-volume)
+    - [Managing Volumes](#manage-volumes)
+13. [Collaboration Workflows](#if-you-have-an-existing-application-image-and-want-to-contribute-you-have-two-main-options)
+    - [Single-Container App](#1️⃣-single-container-app-like-a-react-app)
+    - [Multi-Container App](#2️⃣-multi-container-app-mern-stack-node--redis--mongodb)
+
+---
+
 # Problem:
 When we create an application in a specific environment, replicating that environment for the application to function the same on every machine and operating system can be quite problematic. Various factors like different operating systems, different architecture, package versions, dependencies, or even certain command-line interfaces that don't work uniformly across different systems can lead to complications. Dealing with these issues becomes even more cumbersome when multiple team members need to work on or run similar applications, requiring the setup of the same environment multiple times.
 
