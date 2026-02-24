@@ -13,7 +13,7 @@
 6. [Sharing a Docker Environment](#sharing-a-docker-environment-means-sharing-a-docker-image)
 7. [Essential Docker Commands](#sharing-a-docker-environment-means-sharing-a-docker-image)
    - [Running Containers](#run-a-container-with-an-ubuntu-image)
-   - [Interactive vs Detached Mode](#the--it-flag-controls-whether-the-host-terminal-stays-attached-or-not-however-once-we-use--it-whether-we-remain-inside-the-container-depends-on-the-command-itself)
+   - [Interactive vs Detached Mode](#interactive-vs-detached-mode)
    - [Port Mapping](#port-mapping)
    - [Environment Variables](#environment-variables)
 8. [Dockerizing a Web Application](#dockerizing-a-web-application)
@@ -164,12 +164,12 @@ Docker image → executed → container gets created.
 - `docker run -it --name my_container <image_name>`  → create container with a name 
 - `docker run --rm -it ubuntu` → This deletes the container automatically when it stops.
 
-**Run a container with an Ubuntu image:**  
+### Run a Container with an Ubuntu Image
 - `docker run ubuntu` → Create a container with the Ubuntu image and return to the host terminal  
 - `docker run -it ubuntu` → Create a container with the Ubuntu image and attach the host terminal to the container  
 
-
-**The `-it` flag controls whether the host terminal stays attached or not. However, once we use `-it`, whether we remain inside the container depends on the command itself.**  
+### Interactive vs Detached Mode
+The `-it` flag controls whether the host terminal stays attached or not. However, once we use `-it`, whether we remain inside the container depends on the command itself.
 
 ### Examples:
 - Running `ls` after adding `-it` **just prints output** and returns to the host terminal.  
